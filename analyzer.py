@@ -1,8 +1,6 @@
 from google import genai
-from config import GEMINI_API_KEY, MODEL_NAME
+from config import GEMINI_API_KEY, MODEL_NAME,TEMPERATURE
 import json
-
-MY_API_KEY =""
 
 class SentimentAnalyzer:
     def __init__(self):
@@ -17,7 +15,7 @@ class SentimentAnalyzer:
             return {"error": "Boş metin gönderildi."}
         
         prompt = f"""
-                Sen profesyonel bir duygu analizi ve dil uzmanısın.
+                Sen profesyonel bir müşteri yorumu analiz uzmanısın.
                 Aşağıdaki metni analiz et.
 
                 {text}
@@ -26,18 +24,30 @@ class SentimentAnalyzer:
                 {
                     {
                         "sentiment":"Pozitif ,Negatif veya Nötr",
-                        "score":"0 ile 100 arası bir sayı(100 =Çok olumlu)",
+                        "score":0 ,
                         "summary":"Metnin ana fikri (Maksimum 10 kelime)",
+                        "keywords":[
+                            "kelime1",
+                            "kelime2",
+                            "kelime3",
+                            "kelime4",
+                            "kelime5"
+                        ],
                         "language":"Metnin dili (tr, en, de vb.)"
                     }
                 }
+        Kurallar:
+        -keywords kısmına en önemli 5 anahtar kelimeyi yaz.
+        -score 0-100 arasında sayı olsun.
+        -Başka hiçbir açıklama yazma.
         """
         try:
             response = self.client.models.generate_content(
                 model=self.model_id,
                 contents=prompt,
                 config={
-                    'response_mime_type':'application/json'
+                    "response_mime_type":"application/json",
+                    "temperature":TEMPERATURE
                 })
             
             clean_text = (response.text.replace("```json","").replace("```","").strip())
@@ -50,6 +60,7 @@ class SentimentAnalyzer:
                 "sentiment":"Hata",
                 "score":0,
                 "summary":"Analiz sırasında bir hata oluştu",
+                "keywords": [],
                 "language":"Bilinmiyor",
                 "error_detail":str(ex)
             }
@@ -63,4 +74,8 @@ if __name__ =="__main__":
     ornek_yorum = "Berbat bir ürün çok kalitesiz, rengi de çok kötü"
     sonuc = analizci.analyze_text(ornek_yorum)
 
-    print(sonuc)
+    print(json.dumps(
+    sonuc,
+    indent=4, # json'ı daha okunabilir yapıyor.
+    ensure_ascii=False # json'da türkçe karakter kullanımı için
+))
